@@ -45,9 +45,20 @@ type createRequest struct {
 	Title string `json:"title"`
 }
 
+var validStatuses = map[string]bool{
+	"todo":        true,
+	"in-progress": true,
+	"done":        true,
+}
+
 func handleCreate(w http.ResponseWriter, r *http.Request, store *Store) {
 	var req createRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Title == "" {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid body", http.StatusBadRequest)
+		return
+	}
+	req.Title = strings.TrimSpace(req.Title)
+	if req.Title == "" {
 		http.Error(w, "title is required", http.StatusBadRequest)
 		return
 	}
@@ -66,6 +77,15 @@ func handleUpdate(w http.ResponseWriter, r *http.Request, store *Store, id int) 
 	var req updateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid body", http.StatusBadRequest)
+		return
+	}
+	req.Title = strings.TrimSpace(req.Title)
+	if req.Title == "" {
+		http.Error(w, "title is required", http.StatusBadRequest)
+		return
+	}
+	if !validStatuses[req.Status] {
+		http.Error(w, "status must be todo, in-progress, or done", http.StatusBadRequest)
 		return
 	}
 	task, ok := store.Update(id, req.Title, req.Status)
