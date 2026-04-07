@@ -81,6 +81,61 @@ func TestUpdateTask_Handler(t *testing.T) {
 	}
 }
 
+func TestCreateTask_WhitespaceTitle(t *testing.T) {
+	srv := httptest.NewServer(setupRouter())
+	defer srv.Close()
+
+	body := bytes.NewBufferString(`{"title":"   "}`)
+	resp, err := http.Post(srv.URL+"/api/tasks", "application/json", body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", resp.StatusCode)
+	}
+}
+
+func TestUpdateTask_InvalidStatus(t *testing.T) {
+	srv := httptest.NewServer(setupRouter())
+	defer srv.Close()
+
+	body := bytes.NewBufferString(`{"title":"Task"}`)
+	http.Post(srv.URL+"/api/tasks", "application/json", body)
+
+	body = bytes.NewBufferString(`{"title":"Task","status":"invalid"}`)
+	req, _ := http.NewRequest(http.MethodPut, srv.URL+"/api/tasks/1", body)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", resp.StatusCode)
+	}
+}
+
+func TestUpdateTask_EmptyTitle(t *testing.T) {
+	srv := httptest.NewServer(setupRouter())
+	defer srv.Close()
+
+	body := bytes.NewBufferString(`{"title":"Task"}`)
+	http.Post(srv.URL+"/api/tasks", "application/json", body)
+
+	body = bytes.NewBufferString(`{"title":"","status":"done"}`)
+	req, _ := http.NewRequest(http.MethodPut, srv.URL+"/api/tasks/1", body)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", resp.StatusCode)
+	}
+}
+
 func TestDeleteTask_Handler(t *testing.T) {
 	srv := httptest.NewServer(setupRouter())
 	defer srv.Close()
