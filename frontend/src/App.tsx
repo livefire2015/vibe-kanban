@@ -28,11 +28,12 @@ export default function App() {
     e.preventDefault();
     const title = newTitle().trim();
     if (!title) return;
-    await fetch("/api/tasks", {
+    const res = await fetch("/api/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title }),
     });
+    if (!res.ok) return;
     setNewTitle("");
     refetch();
   }
@@ -41,16 +42,18 @@ export default function App() {
     const idx = statusOrder.indexOf(task.status);
     const newStatus = statusOrder[idx + direction];
     if (!newStatus) return;
-    await fetch(`/api/tasks/${task.id}`, {
+    const res = await fetch(`/api/tasks/${task.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: task.title, status: newStatus }),
     });
+    if (!res.ok) return;
     refetch();
   }
 
   async function deleteTask(id: number) {
-    await fetch(`/api/tasks/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/tasks/${id}`, { method: "DELETE" });
+    if (!res.ok) return;
     refetch();
   }
 
@@ -79,7 +82,10 @@ export default function App() {
                         <span class="card-title">{task.title}</span>
                         <div class="card-actions">
                           <Show when={statusOrder.indexOf(task.status) > 0}>
-                            <button onClick={() => moveTask(task, -1)}>
+                            <button
+                              aria-label={`Move "${task.title}" back`}
+                              onClick={() => moveTask(task, -1)}
+                            >
                               &#8592;
                             </button>
                           </Show>
@@ -89,12 +95,16 @@ export default function App() {
                               statusOrder.length - 1
                             }
                           >
-                            <button onClick={() => moveTask(task, 1)}>
+                            <button
+                              aria-label={`Move "${task.title}" forward`}
+                              onClick={() => moveTask(task, 1)}
+                            >
                               &#8594;
                             </button>
                           </Show>
                           <button
                             class="delete"
+                            aria-label={`Delete "${task.title}"`}
                             onClick={() => deleteTask(task.id)}
                           >
                             &times;
